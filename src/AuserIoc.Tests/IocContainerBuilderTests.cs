@@ -67,6 +67,7 @@ public class IocContainerBuilderTests
     public void ConfigurationTest()
     {
         var builder = new IocContainerBuilder();
+
         builder.RegisterType<BuilderTestService>();
         builder.RegisterType<IUniverse, Universe>();
 

@@ -1,4 +1,5 @@
 ﻿using AuserIoc.Exceptions;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 
 namespace AuserIoc;
@@ -10,8 +11,7 @@ public class IocContainerBuilder
 {
     private readonly IList<Action<IocContainerBuilder>> _configurationMethods;
     private readonly IList<Action<IocContainerBuilder, IDictionary<Type, IocObject>>> _configurationFullMethods;
-
-    private readonly IDictionary<Type, IocObject> _iocObjectMap;
+    private readonly ConcurrentDictionary<Type, IocObject> _iocObjectMap;
 
     /// <summary>
     /// 实例化
@@ -20,7 +20,7 @@ public class IocContainerBuilder
     {
         _configurationMethods = [];
         _configurationFullMethods = [];
-        _iocObjectMap = new Dictionary<Type, IocObject>();
+        _iocObjectMap = [];
     }
 
     /// <summary>
@@ -30,14 +30,10 @@ public class IocContainerBuilder
     public IIocContainer Build()
     {
         foreach (var method in _configurationMethods)
-        {
             method(this);
-        }
 
         foreach (var method in _configurationFullMethods)
-        {
             method(this, _iocObjectMap);
-        }
 
 #if NET462 || NET472 || NET481 || NET6_0
         var readonlyDictionary = new ReadOnlyDictionary<Type, IocObject>(_iocObjectMap);
@@ -51,9 +47,17 @@ public class IocContainerBuilder
 
         if (!_iocObjectMap.ContainsKey(iocContainerType))
         {
-            CreateRegisterType<IocContainer>()
-            .As<IIocContainer>()
-            .InstanceByContainerScope();
+            //CreateRegisterType<IocContainer>()
+            //.As<IIocContainer>()
+            //.InstanceByContainerScope();
+
+            var iocObject = new IocObject(iocContainerType);
+
+            iocObject
+                .As<IIocContainer>()
+                .InstanceByContainerScope();
+
+            _iocObjectMap.TryAdd(iocContainerType, iocObject);
         }
 
         var iocContainerBuilderType = typeof(IocContainerBuilder);
@@ -61,7 +65,8 @@ public class IocContainerBuilder
         if (!_iocObjectMap.ContainsKey(iocContainerBuilderType))
         {
             var iocObject = new IocObject(this);
-            _iocObjectMap.Add(iocContainerBuilderType, iocObject);
+
+            _iocObjectMap.TryAdd(iocContainerBuilderType, iocObject);
         }
 
         container.Initialize();
@@ -95,7 +100,7 @@ public class IocContainerBuilder
 
         var iocObject = new IocObject(type);
 
-        _iocObjectMap.Add(type, iocObject);
+        _iocObjectMap.TryAdd(type, iocObject);
 
         return iocObject;
     }
@@ -118,7 +123,7 @@ public class IocContainerBuilder
 
         var iocObject = new IocObject(instance!);
 
-        _iocObjectMap.Add(type, iocObject);
+        _iocObjectMap.TryAdd(type, iocObject);
 
         return iocObject;
     }

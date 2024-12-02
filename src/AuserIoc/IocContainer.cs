@@ -15,7 +15,8 @@ public class IocContainer : IIocContainer
 
     private readonly IocObjectManage _iocObjectManage;
     private readonly IReadOnlyDictionary<string, IocObject> _iocObjectNameMap;
-    private readonly IocInstanceManage _scopeInstanceManage;
+    //private readonly IocInstanceManage _scopeInstanceManage;
+    private readonly Dictionary<IocObject, WeakReference<object>> _scopeInstanceManage;
 
     internal IocContainer(IReadOnlyDictionary<Type, IocObject> iocObjectMap)
     {
@@ -23,7 +24,8 @@ public class IocContainer : IIocContainer
 
         _iocObjectNameMap = iocObjectMap.Values.Where(t => !string.IsNullOrWhiteSpace(t.Name)).ToDictionary(obj => obj.Name!, obj => obj)!;
 
-        _scopeInstanceManage = new IocInstanceManage();
+        //_scopeInstanceManage = new IocInstanceManage();
+        _scopeInstanceManage = [];
     }
 
     internal void Initialize()
@@ -119,33 +121,36 @@ public class IocContainer : IIocContainer
 
     private object ResolveInstanceBySingleton(Type type, IocObject iocObject)
     {
-        if (IocContext.SINGLE_INSTANCE_MANAGE.TryGetValue(iocObject, out var instance))
-        {
-            return instance!;
-        }
+        //if (IocContext.SINGLE_INSTANCE_MANAGE.TryGetValue(iocObject, out var instance))
+        //{
+        //    return instance!;
+        //}
 
-        lock (IocContext.STATIC_LOCK)  // 只在需要创建实例时加锁
-        {
-            if (!IocContext.SINGLE_INSTANCE_MANAGE.ContainsKey(iocObject))
-            {
-                var newInstance = iocObject.Instance;
+        //lock (IocContext.STATIC_LOCK)  // 只在需要创建实例时加锁
+        //{
+        //    if (!IocContext.SINGLE_INSTANCE_MANAGE.ContainsKey(iocObject))
+        //    {
+        //        var newInstance = iocObject.Instance;
 
-                if (iocObject.Instance is null)
-                {
-                    newInstance = GetInstance(type, iocObject);
-                }
+        //        if (newInstance is null)
+        //        {
+        //            newInstance = GetInstance(type, iocObject);
+        //        }
 
-                IocContext.SINGLE_INSTANCE_MANAGE.Add(iocObject, newInstance!);
-                return newInstance!;
-            }
+        //        IocContext.SINGLE_INSTANCE_MANAGE.Add(iocObject, newInstance!);
 
-            return IocContext.SINGLE_INSTANCE_MANAGE[iocObject];
-        }
+        //        return newInstance!;
+        //    }
+
+        //    return IocContext.SINGLE_INSTANCE_MANAGE[iocObject];
+        //}
+
+        return TakeInstance(IocContext.SINGLE_INSTANCE_MANAGE, IocContext.STATIC_LOCK, type, iocObject);
     }
 
     private object ResolveInstanceByContainerScope(Type type, IocObject iocObject)
     {
-        if (_scopeInstanceManage.TryGetValue(iocObject, out var instance))
+        if (_scopeInstanceManage.TryGetValue(iocObject, out var weakReference) && weakReference.TryGetTarget(out var instance))
         {
             return instance!;
         }
@@ -155,12 +160,22 @@ public class IocContainer : IIocContainer
             if (!_scopeInstanceManage.ContainsKey(iocObject))
             {
                 var newInstance = GetInstance(type, iocObject);
-                _scopeInstanceManage.Add(iocObject, newInstance);
+                _scopeInstanceManage.Add(iocObject, new WeakReference<object>(newInstance));
                 return newInstance;
             }
 
-            return _scopeInstanceManage[iocObject];
+            if (_scopeInstanceManage[iocObject].TryGetTarget(out instance))
+            {
+                return instance;
+            }
+            else
+            {
+                var newInstance = GetInstance(type, iocObject);
+                _scopeInstanceManage[iocObject].SetTarget(newInstance);
+                return newInstance;
+            }
         }
+        //return TakeInstance(_scopeInstanceManage, _lock, type, iocObject);
     }
 
     private object ResolveInstanceByPerDependency(Type type, IocObject iocObject)
@@ -193,6 +208,45 @@ public class IocContainer : IIocContainer
             var constructor = iocObject.GetConstructorInfo(type);
 
             return constructor.Invoke(parametersResolve());
+        }
+    }
+
+    private object TakeInstance(IocInstanceManage iocInstanceManage, object lockObject, Type type, IocObject iocObject)
+    {
+        if (iocInstanceManage.TryGetValue(iocObject, out var instance))
+        {
+            return instance;
+        }
+
+        lock (lockObject)
+        {
+            if (!iocInstanceManage.ContainsKey(iocObject))
+            {
+                var newInstance = iocObject.Instance;
+
+                if (newInstance is null)
+                {
+                    newInstance = GetInstance(type, iocObject);
+                }
+
+                iocInstanceManage.Add(iocObject, newInstance!);
+
+                return newInstance!;
+            }
+
+            return iocInstanceManage[iocObject];
+        }
+    }
+
+    public void Dispose()
+    {
+        //GC.SuppressFinalize(this);
+        //throw new NotImplementedException();
+
+        lock (_lock)
+        {
+            _scopeInstanceManage.Clear();
+            GC.Collect();
         }
     }
 }

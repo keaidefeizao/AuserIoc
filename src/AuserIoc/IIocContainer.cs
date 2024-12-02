@@ -3,7 +3,7 @@
 /// <summary>
 /// ioc 容器接口
 /// </summary>
-public interface IIocContainer
+public interface IIocContainer : IDisposable
 {
     /// <summary>
     /// 开始一个新的容器
