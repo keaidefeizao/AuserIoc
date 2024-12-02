@@ -33,8 +33,12 @@ public class ContainerScopeTests
         var newUniverse2 = newContainer.Resolve<IUniverse>();
 
         (newUniverse1 == newUniverse2).Should().BeTrue();
+
         (universe1 == newUniverse1).Should().BeFalse();
         (universe2 == newUniverse2).Should().BeFalse();
+
+        (universe1.Earth == newUniverse1.Earth).Should().BeFalse();
+        (universe1.Moon == newUniverse1.Moon).Should().BeFalse();
     }
 
     [TestMethod]
