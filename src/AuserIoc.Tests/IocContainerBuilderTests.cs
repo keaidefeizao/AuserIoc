@@ -28,9 +28,9 @@ public class IocContainerBuilderTests
         //builder.CreateRegisterType<Moon>().As<IMoon>().InstanceByPerDependency();
         //builder.CreateRegisterType<Earth>().As<IEarth>().InstanceBySingleton();
 
-        builder.RegisterType<IUniverse, Universe>();
+        builder.RegisterSingleton<IUniverse, Universe>();
         builder.RegisterScoped<IEarth, Earth>();
-        builder.RegisterSingleton<IMoon, Moon>();
+        builder.RegisterType<IMoon, Moon>();
 
         var container = builder.Build();
 
