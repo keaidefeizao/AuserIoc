@@ -9,7 +9,6 @@
 
 #### 使用方法
 ``` csharp
-#region
 
 public class AService(IBService bService)
 {
@@ -20,8 +19,6 @@ public class AService(IBService bService)
 public interface IBService { }
 
 public class BService() : IBService { }
-
-#endregion
 
 // 使用
 var builder = new IocContainerBuilder();
