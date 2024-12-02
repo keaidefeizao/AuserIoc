@@ -222,13 +222,7 @@ public class IocObject
     /// <returns></returns>
     public IocObject InstanceBySingleton()
     {
-        //if (Instance is not null)
-        //{
-        //    throw new IocObjectConfigurationException($"{nameof(Instance)} 属性已经设置无法进行 {nameof(InstanceBySingleton)} 方法");
-        //}
-
         InstanceResolveType = InstanceResolveType.Singleton;
-
         return this;
     }
 
