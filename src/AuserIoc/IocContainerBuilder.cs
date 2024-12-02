@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using AuserIoc.Exceptions;
+using System.Collections.ObjectModel;
 
 namespace AuserIoc;
 
@@ -89,7 +90,7 @@ public class IocContainerBuilder
     {
         if (_iocObjectMap.ContainsKey(type))
         {
-            throw new Exception($"{type.FullName} 已经注册");
+            throw new RegisteredException(type);
         }
 
         var iocObject = new IocObject(type);
@@ -112,7 +113,7 @@ public class IocContainerBuilder
 
         if (_iocObjectMap.ContainsKey(type))
         {
-            throw new Exception($"{type.FullName} 已经注册");
+            throw new RegisteredException(type);
         }
 
         var iocObject = new IocObject(instance!);
