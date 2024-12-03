@@ -10,8 +10,8 @@ namespace AuserIoc;
 public class IocContainerBuilder
 {
     private readonly IList<Action<IocContainerBuilder>> _configurationMethods;
-    private readonly IList<Action<IocContainerBuilder, IDictionary<Type, IocObject>>> _configurationFullMethods;
-    private readonly ConcurrentDictionary<Type, IocObject> _iocObjectMap;
+    private readonly IList<Action<IocContainerBuilder, IDictionary<Type, RegisterObject>>> _configurationFullMethods;
+    private readonly ConcurrentDictionary<Type, RegisterObject> _registerObjectMap;
 
     /// <summary>
     /// 实例化
@@ -20,7 +20,7 @@ public class IocContainerBuilder
     {
         _configurationMethods = [];
         _configurationFullMethods = [];
-        _iocObjectMap = [];
+        _registerObjectMap = [];
     }
 
     /// <summary>
@@ -33,40 +33,36 @@ public class IocContainerBuilder
             method(this);
 
         foreach (var method in _configurationFullMethods)
-            method(this, _iocObjectMap);
+            method(this, _registerObjectMap);
 
 #if NET462 || NET472 || NET481 || NET6_0
-        var readonlyDictionary = new ReadOnlyDictionary<Type, IocObject>(_iocObjectMap);
+        var readonlyDictionary = new ReadOnlyDictionary<Type, RegisterObject>(_registerObjectMap);
 #else
-        var readonlyDictionary = _iocObjectMap.AsReadOnly();
+        var readonlyDictionary = _registerObjectMap.AsReadOnly();
 #endif
         var container = new IocContainer(readonlyDictionary);
 
         // 默认注入当前容器
         var iocContainerType = typeof(IocContainer);
 
-        if (!_iocObjectMap.ContainsKey(iocContainerType))
+        if (!_registerObjectMap.ContainsKey(iocContainerType))
         {
-            //CreateRegisterType<IocContainer>()
-            //.As<IIocContainer>()
-            //.InstanceByContainerScope();
+            var registerObject = new RegisterObject(iocContainerType);
 
-            var iocObject = new IocObject(iocContainerType);
-
-            iocObject
+            registerObject
                 .As<IIocContainer>()
                 .InstanceByContainerScope();
 
-            _iocObjectMap.TryAdd(iocContainerType, iocObject);
+            _registerObjectMap.TryAdd(iocContainerType, registerObject);
         }
 
         var iocContainerBuilderType = typeof(IocContainerBuilder);
 
-        if (!_iocObjectMap.ContainsKey(iocContainerBuilderType))
+        if (!_registerObjectMap.ContainsKey(iocContainerBuilderType))
         {
-            var iocObject = new IocObject(this);
+            var registerObject = new RegisterObject(this);
 
-            _iocObjectMap.TryAdd(iocContainerBuilderType, iocObject);
+            _registerObjectMap.TryAdd(iocContainerBuilderType, registerObject);
         }
 
         container.Initialize();
@@ -80,7 +76,7 @@ public class IocContainerBuilder
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public IocObject CreateRegisterType<T>()
+    public RegisterObject CreateRegisterType<T>()
     {
         return CreateRegisterType(typeof(T));
     }
@@ -91,18 +87,18 @@ public class IocContainerBuilder
     /// <param name="type"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public IocObject CreateRegisterType(Type type)
+    public RegisterObject CreateRegisterType(Type type)
     {
-        if (_iocObjectMap.ContainsKey(type))
+        if (_registerObjectMap.ContainsKey(type))
         {
-            throw new RegisteredException(type);
+            throw new RegisteredTypeException(type);
         }
 
-        var iocObject = new IocObject(type);
+        var registerObject = new RegisterObject(type);
 
-        _iocObjectMap.TryAdd(type, iocObject);
+        _registerObjectMap.TryAdd(type, registerObject);
 
-        return iocObject;
+        return registerObject;
     }
 
     /// <summary>
@@ -112,20 +108,20 @@ public class IocContainerBuilder
     /// <param name="instance"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public IocObject CreateRegisterInstance<TInterface>(TInterface instance)
+    public RegisterObject CreateRegisterInstance<TInterface>(TInterface instance)
     {
         var type = typeof(TInterface);
 
-        if (_iocObjectMap.ContainsKey(type))
+        if (_registerObjectMap.ContainsKey(type))
         {
-            throw new RegisteredException(type);
+            throw new RegisteredTypeException(type);
         }
 
-        var iocObject = new IocObject(instance!);
+        var registerObject = new RegisterObject(instance!);
 
-        _iocObjectMap.TryAdd(type, iocObject);
+        _registerObjectMap.TryAdd(type, registerObject);
 
-        return iocObject;
+        return registerObject;
     }
 
     /// <summary>
@@ -151,7 +147,7 @@ public class IocContainerBuilder
     /// </summary>
     /// <param name="configurationMethod"></param>
     /// <returns></returns>
-    public IocContainerBuilder Configuration(Action<IocContainerBuilder, IDictionary<Type, IocObject>> configurationMethod)
+    public IocContainerBuilder Configuration(Action<IocContainerBuilder, IDictionary<Type, RegisterObject>> configurationMethod)
     {
         if (configurationMethod is null)
         {

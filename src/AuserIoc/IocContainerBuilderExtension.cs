@@ -1,5 +1,8 @@
 ﻿namespace AuserIoc;
 
+/// <summary>
+/// IocContainerBuilder的扩展函数
+/// </summary>
 public static class IocContainerBuilderExtension
 {
     /// <summary>

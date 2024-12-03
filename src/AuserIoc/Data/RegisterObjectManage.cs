@@ -2,9 +2,9 @@
 
 namespace AuserIoc.Data;
 
-internal class IocObjectManage(IReadOnlyDictionary<Type, IocObject> IocObjectMap)
+internal class RegisterObjectManage(IReadOnlyDictionary<Type, RegisterObject> IocObjectMap)
 {
-    internal IocObject this[Type type]
+    internal RegisterObject this[Type type]
     {
         get
         {
@@ -12,9 +12,9 @@ internal class IocObjectManage(IReadOnlyDictionary<Type, IocObject> IocObjectMap
         }
     }
 
-    internal IReadOnlyDictionary<Type, IocObject> Map => IocObjectMap;
+    internal IReadOnlyDictionary<Type, RegisterObject> Map => IocObjectMap;
 
-    private IocObject Get(Type type)
+    private RegisterObject Get(Type type)
     {
         if (IocObjectMap.ContainsKey(type))
         {

@@ -1,55 +1,30 @@
-﻿using AuserIoc.Common.Attributes;
+﻿using AuserIoc.Common;
+using AuserIoc.Common.Attributes;
 using AuserIoc.Exceptions;
 using System.Reflection;
 
 namespace AuserIoc;
 
 /// <summary>
-/// ioc对象实例类型枚举
+/// 注册对象
 /// </summary>
-public enum InstanceResolveType
-{
-    /// <summary>
-    /// 单例
-    /// </summary>
-    Singleton,
-
-    /// <summary>
-    /// 每个都新实例
-    /// </summary>
-    PerDependency,
-
-    /// <summary>
-    /// 在范围内保持一个的实例
-    /// </summary>
-    ContainerScope,
-
-    /// <summary>
-    /// 
-    /// </summary>
-    None,
-}
-
-/// <summary>
-/// 
-/// </summary>
-public class IocObject
+public class RegisterObject
 {
     private readonly Type _type;
 
     private ConstructorInfo[]? _constructorInfos = null;
     private ParameterInfo[]? _parameterInfos = null;
 
-    internal IocObject(Type type)
+    internal RegisterObject(Type type)
     {
         _type = type;
     }
 
-    internal IocObject(string typeFullName) : this(Type.GetType(typeFullName)!)
+    internal RegisterObject(string typeFullName) : this(Type.GetType(typeFullName)!)
     {
     }
 
-    internal IocObject(object instance) : this(instance.GetType())
+    internal RegisterObject(object instance) : this(instance.GetType())
     {
         Instance = instance;
         InstanceResolveType = InstanceResolveType.None;
@@ -81,41 +56,9 @@ public class IocObject
     public InstanceResolveType InstanceResolveType { get; private set; } = InstanceResolveType.PerDependency;
 
     /// <summary>
-    /// 
+    /// 工厂方法的参数信息
     /// </summary>
-    public ConstructorInfo[] ConstructorInfos
-    {
-        get
-        {
-            if (_constructorInfos is null)
-            {
-                if (FactoryMethod is not null)
-                {
-                    _constructorInfos = [];
-                }
-                else
-                {
-                    _constructorInfos = Type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
-
-                    if (_constructorInfos.Length > 1)
-                    {
-                        var resolveAttributeType = typeof(IocResolveAttribute);
-
-                        _constructorInfos = _constructorInfos
-                            .Where(c => c.GetCustomAttribute(resolveAttributeType) is not null)
-                            .ToArray();
-                    }
-                }
-            }
-
-            return _constructorInfos!;
-        }
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public ParameterInfo[] ParameterInfos
+    public ParameterInfo[] FactoryMethodParameterInfos
     {
         get
         {
@@ -123,7 +66,7 @@ public class IocObject
             {
                 if (FactoryMethod is null)
                 {
-                    _parameterInfos = ConstructorInfos[0].GetParameters();
+                    _parameterInfos = [];
                 }
                 else
                 {
@@ -144,7 +87,7 @@ public class IocObject
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public IocObject As<T>()
+    public RegisterObject As<T>()
     {
         ParentType = typeof(T);
         return this;
@@ -155,7 +98,7 @@ public class IocObject
     /// </summary>
     /// <param name="parentTypeFullName"></param>
     /// <returns></returns>
-    public IocObject As(string parentTypeFullName)
+    public RegisterObject As(string parentTypeFullName)
     {
         ParentType = Type.GetType(parentTypeFullName);
         return this;
@@ -166,7 +109,7 @@ public class IocObject
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    public IocObject As(Type type)
+    public RegisterObject As(Type type)
     {
         ParentType = type;
         return this;
@@ -178,7 +121,7 @@ public class IocObject
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public IocObject SetName(string name)
+    public RegisterObject SetName(string name)
     {
         Name = name;
         return this;
@@ -188,11 +131,12 @@ public class IocObject
     /// 每个都是新实例
     /// </summary>
     /// <returns></returns>
-    public IocObject InstanceByPerDependency()
+    public RegisterObject InstanceByPerDependency()
     {
         if (Instance is not null)
         {
-            throw new IocObjectConfigurationException($"{nameof(Instance)} 属性已经设置无法进行 {nameof(InstanceByPerDependency)} 方法");
+            //throw new IocObjectConfigurationException($"{nameof(Instance)} 属性已经设置无法进行 {nameof(InstanceByPerDependency)} 方法");
+            throw new IocObjectConfigurationException($"The {nameof(Instance)} property is already set. The {nameof(InstanceByPerDependency)} method cannot be performed");
         }
 
         InstanceResolveType = InstanceResolveType.PerDependency;
@@ -204,11 +148,11 @@ public class IocObject
     /// 在一个容器范围内保持一个实例的注册
     /// </summary>
     /// <returns></returns>
-    public IocObject InstanceByContainerScope()
+    public RegisterObject InstanceByContainerScope()
     {
         if (Instance is not null)
         {
-            throw new IocObjectConfigurationException($"{nameof(Instance)} 属性已经设置无法进行 {nameof(InstanceByContainerScope)} 方法");
+            throw new IocObjectConfigurationException($"The {nameof(Instance)} property is already set. The {nameof(InstanceByContainerScope)} method cannot be performed");
         }
 
         InstanceResolveType = InstanceResolveType.ContainerScope;
@@ -220,7 +164,7 @@ public class IocObject
     /// 单例注册
     /// </summary>
     /// <returns></returns>
-    public IocObject InstanceBySingleton()
+    public RegisterObject InstanceBySingleton()
     {
         InstanceResolveType = InstanceResolveType.Singleton;
         return this;
@@ -231,7 +175,7 @@ public class IocObject
     /// </summary>
     /// <param name="factoryMethod"></param>
     /// <returns></returns>
-    public IocObject AddFactoryMethod(Func<object> factoryMethod)
+    public RegisterObject AddFactoryMethod(Func<object> factoryMethod)
     {
         FactoryMethod = factoryMethod;
         return this;
@@ -242,7 +186,7 @@ public class IocObject
     /// </summary>
     /// <param name="factoryMethod"></param>
     /// <returns></returns>
-    public IocObject AddFactoryMethod(Func<IIocContainer, object> factoryMethod)
+    public RegisterObject AddFactoryMethod(Func<IIocContainer, object> factoryMethod)
     {
         FactoryMethod = factoryMethod;
         return this;
@@ -253,42 +197,40 @@ public class IocObject
     /// </summary>
     /// <param name="factoryMethod"></param>
     /// <returns></returns>
-    public IocObject AddFactoryMethod(Delegate factoryMethod)
+    public RegisterObject AddFactoryMethod(Delegate factoryMethod)
     {
         FactoryMethod = factoryMethod;
         return this;
     }
 
     /// <summary>
-    /// 获取实际类型的构造函数
+    /// 获取实际类型的构造函数相关信息
     /// </summary>
     /// <param name="type"></param>
-    /// <returns></returns>
+    /// <returns>类型解析的信息</returns>
     /// <exception cref="IocResolveException"></exception>
-    internal virtual ConstructorInfo GetConstructorInfo(Type type)
+    internal virtual TypeResolveInfo GetTypeResolveInfo(Type type)
     {
-        if (ConstructorInfos.Length == 0 || ConstructorInfos.Length > 1)
+        if (IocContext.ACTUAL_TYPE_TYPERESOLVEINFO_MAP.TryGetValue(type, out TypeResolveInfo? typeResolveInfo))
         {
-            throw new IocResolveException("构造函数必须有且只能有一个");
+            return typeResolveInfo;
         }
 
-        var constructor = ConstructorInfos[0];
+        ConstructorInfo[] constructorInfos;
 
-        if (!constructor.ContainsGenericParameters)
-            return constructor;
-
-        var specificType = Type.MakeGenericType(type.GetGenericArguments());
-
-        if (IocContext.ACTUAL_TYPE_CONSTRUCTORINFO_MAP.TryGetValue(specificType, out ConstructorInfo? constructorInfo))
+        if (type.IsGenericType)
         {
-            return constructorInfo;
+            var specificType = Type.MakeGenericType(type.GetGenericArguments());
+            constructorInfos = specificType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
         }
-
-        var constructorInfos = specificType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
+        else
+        {
+            constructorInfos = Type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
+        }
 
         if (constructorInfos.Length == 0)
         {
-            throw new IocResolveException("构造函数必须有且只能有一个");
+            throw new IocResolveException("There must be only one constructor");
         }
 
         if (constructorInfos.Length > 1)
@@ -301,12 +243,16 @@ public class IocObject
 
             if (constructorInfos.Length > 1)
             {
-                throw new IocResolveException("构造函数必须有且只能有一个");
+                throw new IocResolveException("There must be only one constructor");
             }
         }
 
-        IocContext.ACTUAL_TYPE_CONSTRUCTORINFO_MAP.TryAdd(specificType, constructorInfos[0]);
+        var constructorInfo = constructorInfos[0];
 
-        return constructorInfos[0];
+        typeResolveInfo = new TypeResolveInfo(type, constructorInfo, constructorInfo.GetParameters());
+
+        IocContext.ACTUAL_TYPE_TYPERESOLVEINFO_MAP.TryAdd(type, typeResolveInfo);
+
+        return typeResolveInfo;
     }
 }

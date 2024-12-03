@@ -1,6 +1,6 @@
-﻿using AuserIoc.Data;
+﻿using AuserIoc.Common;
+using AuserIoc.Data;
 using System.Collections.Concurrent;
-using System.Reflection;
 
 namespace AuserIoc;
 
@@ -17,7 +17,7 @@ internal class IocContext
     internal static readonly IocInstanceManage SINGLE_INSTANCE_MANAGE = new IocInstanceManage();
 
     /// <summary>
-    /// 确定泛型参数类型的构造函数字典
+    /// 确定泛型参数类型的解析信息数字典
     /// </summary>
-    internal static readonly ConcurrentDictionary<Type, ConstructorInfo> ACTUAL_TYPE_CONSTRUCTORINFO_MAP = [];
+    internal static readonly ConcurrentDictionary<Type, TypeResolveInfo> ACTUAL_TYPE_TYPERESOLVEINFO_MAP = [];
 }
