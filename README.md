@@ -9,7 +9,6 @@
 
 #### 使用方法
 ``` csharp
-
 public class AService(IBService bService)
 {
     private readonly IBService _bService = bService;
