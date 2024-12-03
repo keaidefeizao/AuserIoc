@@ -6,6 +6,8 @@
 #### 软件架构
 支持net4.6.2、net4.7.2、net4.8.1、net6、net8、net9
 
+#### 安装
+    dotnet add package AuserIoc
 
 #### 使用方法
 ``` csharp

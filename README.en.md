@@ -6,6 +6,9 @@ Pure dotNET toy level container, available.
 #### Software Architecture
 Supports net4.6.2, net4.7.2, net4.8.1, net6, net8, and net9
 
+#### Installation
+    dotnet add package AuserIoc
+    
 #### Usage
 ``` csharp
 public class AService(IBService bService)
