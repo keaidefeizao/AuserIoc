@@ -445,9 +445,23 @@ public static class IocContainerBuilderExtension
     /// 注册实例
     /// </summary>
     /// <typeparam name="TInterface"></typeparam>
+    /// <param name="iocContainerBuilder"></param>
     /// <param name="instance"></param>
     /// <returns></returns>
-    /// <exception cref="Exception"></exception>
+    public static IocContainerBuilder RegisterInstance<TInterface>(this IocContainerBuilder iocContainerBuilder, TInterface instance)
+    {
+        iocContainerBuilder.CreateRegisterInstance(instance).InstanceBySingleton();
+        return iocContainerBuilder;
+    }
+
+    /// <summary>
+    /// 注册实例
+    /// </summary>
+    /// <typeparam name="IFrom"></typeparam>
+    /// <typeparam name="TInterface"></typeparam>
+    /// <param name="iocContainerBuilder"></param>
+    /// <param name="instance"></param>
+    /// <returns></returns>
     public static IocContainerBuilder RegisterInstance<IFrom, TInterface>(this IocContainerBuilder iocContainerBuilder, TInterface instance)
     {
         iocContainerBuilder.CreateRegisterInstance(instance).As<IFrom>().InstanceBySingleton();
@@ -457,10 +471,12 @@ public static class IocContainerBuilderExtension
     /// <summary>
     /// 注册实例
     /// </summary>
+    /// <typeparam name="IFrom"></typeparam>
     /// <typeparam name="TInterface"></typeparam>
+    /// <param name="iocContainerBuilder"></param>
     /// <param name="instance"></param>
+    /// <param name="name"></param>
     /// <returns></returns>
-    /// <exception cref="Exception"></exception>
     public static IocContainerBuilder RegisterInstance<IFrom, TInterface>(this IocContainerBuilder iocContainerBuilder, TInterface instance, string name)
     {
         iocContainerBuilder.CreateRegisterInstance(instance).As<IFrom>().SetName(name).InstanceBySingleton();

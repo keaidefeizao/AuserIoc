@@ -148,4 +148,67 @@ public class IocContainerTests
 
         action.Should().Throw<NotRegisterTypeException>();
     }
+
+    /// <summary>
+    /// 工程方法的解析测试
+    /// </summary>
+    [TestMethod]
+    public void FactoryMethodTest()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder
+            .RegisterType<TestService>((IRepository<UserEntity> userRepo,
+                               IRepository<DocEntity> docRepo,
+                               IRepository<object> objectRepo,
+                               IRepository<SqliteContextTag, UserEntity> sqliteUserRepo,
+                               IRepository<SqliteContextTag, DocEntity> sqliteDocRepo,
+                               IRepository<SqliteContextTag, object> sqliteObjectRepo) =>
+            {
+                return new TestService(userRepo, docRepo, objectRepo, sqliteUserRepo, sqliteDocRepo, sqliteObjectRepo);
+            });
+
+        builder.RegisterScoped<AppDbContext>();
+        builder.RegisterScoped<SqliteAppDbContext>();
+        builder.RegisterType(typeof(IRepository<>), typeof(Repository<>));
+        builder.RegisterType(typeof(IRepository<,>), typeof(Repository<,>));
+
+        var container = builder.Build();
+
+        var testService = container.Resolve<TestService>();
+
+        testService.Test();
+        testService.Test2();
+    }
+
+    /// <summary>
+    /// 注册实例测试
+    /// </summary>
+    [TestMethod]
+    public void RegisterInstanceTest()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder.RegisterInstance(new AppDbContext());
+        builder.RegisterInstance(new SqliteAppDbContext());
+
+        var container = builder.Build();
+
+        var appDbContext1 = container.Resolve<AppDbContext>();
+        var sqliteAppDbContext1 = container.Resolve<SqliteAppDbContext>();
+
+        var appDbContext2 = container.Resolve<AppDbContext>();
+        var sqliteAppDbContext2 = container.Resolve<SqliteAppDbContext>();
+
+        (appDbContext1 == appDbContext2).Should().BeTrue();
+        (sqliteAppDbContext1 == sqliteAppDbContext2).Should().BeTrue();
+
+        var container2 = container.BeginContainerScope();
+
+        var appDbContext3 = container2.Resolve<AppDbContext>();
+        var sqliteAppDbContext3 = container2.Resolve<SqliteAppDbContext>();
+
+        (appDbContext1 == appDbContext3).Should().BeTrue();
+        (sqliteAppDbContext1 == sqliteAppDbContext3).Should().BeTrue();
+    }
 }
