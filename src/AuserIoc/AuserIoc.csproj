@@ -9,16 +9,16 @@
     <Title>AuserIoc</Title>
     <RepositoryUrl>https://github.com/keaidefeizao/AuserIoc</RepositoryUrl>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Authors>Auser</Authors>
-    <Description>玩具级容器，能用。</Description>
+    <Description>AuserIoc 是一个轻量级的依赖注入（IOC）容器，旨在提供高效、易用的对象管理和依赖关系解析功能。它适用于需要灵活管理对象生命周期和依赖注入的 .NET 应用程序。</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/keaidefeizao/AuserIoc</PackageProjectUrl>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
-    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net462|AnyCPU'">
