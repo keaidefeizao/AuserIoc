@@ -101,6 +101,7 @@ public static class IocContainerBuilderExtension
     /// 注册类型，解析类型为瞬时的
     /// </summary>
     /// <param name="iocContainerBuilder"></param>
+    /// <param name="type"></param>
     /// <returns></returns>
     public static IocContainerBuilder RegisterType(this IocContainerBuilder iocContainerBuilder, Type type)
     {
@@ -206,8 +207,7 @@ public static class IocContainerBuilderExtension
     /// <summary>
     /// 注册类型，解析类型为容器范围内的不重复的
     /// </summary>
-    /// <typeparam name="TFrom"></typeparam>
-    /// <typeparam name="TTo"></typeparam>
+    /// <typeparam name="T"></typeparam>
     /// <param name="iocContainerBuilder"></param>
     /// <returns></returns>
     public static IocContainerBuilder RegisterScoped<T>(this IocContainerBuilder iocContainerBuilder)
@@ -352,8 +352,7 @@ public static class IocContainerBuilderExtension
     /// <summary>
     /// 注册类型，解析类型为单例的
     /// </summary>
-    /// <typeparam name="TFrom"></typeparam>
-    /// <typeparam name="TTo"></typeparam>
+    /// <typeparam name="T"></typeparam>
     /// <param name="iocContainerBuilder"></param>
     /// <returns></returns>
     public static IocContainerBuilder RegisterSingleton<T>(this IocContainerBuilder iocContainerBuilder)

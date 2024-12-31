@@ -12,7 +12,6 @@ public class RegisterObject
 {
     private readonly Type _type;
 
-    private ConstructorInfo[]? _constructorInfos = null;
     private ParameterInfo[]? _parameterInfos = null;
 
     internal RegisterObject(Type type)
