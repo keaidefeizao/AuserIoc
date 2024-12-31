@@ -1,4 +1,8 @@
-﻿namespace AuserIoc;
+﻿using AuserIoc.Common.Attributes;
+using AuserIoc.Exceptions;
+using System.Reflection;
+
+namespace AuserIoc;
 
 /// <summary>
 /// IocContainerBuilder的扩展函数
@@ -493,6 +497,64 @@ public static class IocContainerBuilderExtension
     public static IocContainerBuilder RegisterInstance<TInterface>(this IocContainerBuilder iocContainerBuilder, TInterface instance, string name)
     {
         iocContainerBuilder.CreateRegisterInstance(instance).SetName(name).InstanceBySingleton();
+        return iocContainerBuilder;
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// 自动注册
+    /// 根据类标注特性进行注册
+    /// </summary>
+    /// <param name="iocContainerBuilder"></param>
+    /// <param name="assemblies"></param>
+    /// <returns></returns>
+    public static IocContainerBuilder AutoRegister(this IocContainerBuilder iocContainerBuilder, IEnumerable<Assembly> assemblies)
+    {
+        foreach (Assembly assembly in assemblies)
+        {
+            foreach (var type in assembly.GetTypes().Where(t=>t.IsClass && !t.IsAbstract))
+            {
+                var autoRegisterAttribute = type.GetCustomAttribute<AutoRegisterAttribute>();
+
+                if (autoRegisterAttribute is null)
+                    continue;
+
+                var ro = iocContainerBuilder.CreateRegisterType(type);
+
+                var interfaceTypes = type.GetInterfaces();
+
+                if (interfaceTypes.Length > 1)
+                {
+                    throw new UnableToDetermineInterfaceException(type);
+                }
+                else if (interfaceTypes.Length == 1)
+                {
+                    ro.As(interfaceTypes[0]);
+                }
+                else
+                {
+                    if (type.BaseType is not null && type.BaseType.FullName != "System.Object")
+                    {
+                        ro.As(type.BaseType);
+                    }
+                }
+
+                if (autoRegisterAttribute is SingletonAttribute)
+                {
+                    ro.InstanceBySingleton();
+                }
+                else if(autoRegisterAttribute is PerDependencyAttribute)
+                {
+                    ro.InstanceByPerDependency();
+                }
+                else if (autoRegisterAttribute is ContainerScopeAttribute)
+                {
+                    ro.InstanceByContainerScope();
+                }
+            }
+        }
+
         return iocContainerBuilder;
     }
 }
