@@ -21,7 +21,7 @@ public enum InstanceResolveType
     ContainerScope,
 
     /// <summary>
-    /// 
+    /// 无特征
     /// </summary>
     None,
 }

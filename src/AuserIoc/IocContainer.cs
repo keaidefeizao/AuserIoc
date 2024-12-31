@@ -8,7 +8,7 @@ namespace AuserIoc;
 /// <summary>
 /// ioc 容器
 /// </summary>
-public class IocContainer : IIocContainer
+public sealed class IocContainer : IIocContainer
 {
     private readonly object _lock = new object();
 
@@ -17,7 +17,6 @@ public class IocContainer : IIocContainer
 
     private readonly RegisterObjectManage _registerObjectManage;
     private readonly IReadOnlyDictionary<string, RegisterObject> _registerObjectNameMap;
-    //private readonly IocInstanceManage _scopeInstanceManage;
     private readonly Dictionary<RegisterObject, WeakReference<object>> _scopeInstanceManage;
 
     internal IocContainer(IReadOnlyDictionary<Type, RegisterObject> registerObjectMap)
@@ -44,9 +43,7 @@ public class IocContainer : IIocContainer
         _ = Resolve<IIocContainer>();
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <inheritdoc/>
     public void Dispose()
     {
         //GC.SuppressFinalize(this);
@@ -133,6 +130,7 @@ public class IocContainer : IIocContainer
 
             case InstanceResolveType.ContainerScope:
                 return ResolveInstanceByContainerScope(type, registerObject);
+
             default:
                 throw new NotImplementedException();
         }

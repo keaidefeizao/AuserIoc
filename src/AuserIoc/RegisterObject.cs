@@ -8,8 +8,12 @@ namespace AuserIoc;
 /// <summary>
 /// 注册对象
 /// </summary>
-public class RegisterObject
+public sealed class RegisterObject
 {
+    private static BindingFlags findConstructorFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default;
+
+    private static Type resolveAttributeType = typeof(IocResolveAttribute);
+
     private readonly Type _type;
 
     private ParameterInfo[]? _parameterInfos = null;
@@ -62,16 +66,8 @@ public class RegisterObject
         get
         {
             if (_parameterInfos is null)
-            {
-                if (FactoryMethod is null)
-                {
-                    _parameterInfos = [];
-                }
-                else
-                {
-                    _parameterInfos = FactoryMethod.Method.GetParameters();
-                }
-            }
+                _parameterInfos = FactoryMethod is null ? [] : FactoryMethod.Method.GetParameters();
+
             return _parameterInfos!;
         }
     }
@@ -208,7 +204,7 @@ public class RegisterObject
     /// <param name="type"></param>
     /// <returns>类型解析的信息</returns>
     /// <exception cref="IocResolveException"></exception>
-    internal virtual TypeResolveInfo GetTypeResolveInfo(Type type)
+    internal TypeResolveInfo GetTypeResolveInfo(Type type)
     {
         if (IocContext.ACTUAL_TYPE_TYPERESOLVEINFO_MAP.TryGetValue(type, out TypeResolveInfo? typeResolveInfo))
         {
@@ -220,11 +216,11 @@ public class RegisterObject
         if (type.IsGenericType)
         {
             var specificType = Type.MakeGenericType(type.GetGenericArguments());
-            constructorInfos = specificType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
+            constructorInfos = specificType.GetConstructors(findConstructorFlags);
         }
         else
         {
-            constructorInfos = Type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default);
+            constructorInfos = Type.GetConstructors(findConstructorFlags);
         }
 
         if (constructorInfos.Length == 0)
@@ -234,8 +230,6 @@ public class RegisterObject
 
         if (constructorInfos.Length > 1)
         {
-            var resolveAttributeType = typeof(IocResolveAttribute);
-
             constructorInfos = constructorInfos
                 .Where(c => c.GetCustomAttribute(resolveAttributeType) is not null)
                 .ToArray();
