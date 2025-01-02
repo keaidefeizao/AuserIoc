@@ -515,10 +515,15 @@ public static class IocContainerBuilderExtension
         {
             foreach (var type in assembly.GetTypes().Where(t=>t.IsClass && !t.IsAbstract))
             {
-                var autoRegisterAttribute = type.GetCustomAttribute<AutoRegisterAttribute>();
+                var autoRegisterAttributes = type.GetCustomAttributes<AutoRegisterAttribute>().ToArray();
 
-                if (autoRegisterAttribute is null)
+                if (autoRegisterAttributes is null || autoRegisterAttributes.Length < 1)
                     continue;
+
+                if (autoRegisterAttributes.Length > 1)
+                {
+                    throw new AutoRegisterException(type, $"Only one '{nameof(AutoRegisterAttribute)}' can be annotated");
+                }
 
                 var ro = iocContainerBuilder.CreateRegisterType(type);
 
@@ -539,6 +544,8 @@ public static class IocContainerBuilderExtension
                         ro.As(type.BaseType);
                     }
                 }
+
+                var autoRegisterAttribute = autoRegisterAttributes[0];
 
                 if (autoRegisterAttribute is SingletonAttribute)
                 {
