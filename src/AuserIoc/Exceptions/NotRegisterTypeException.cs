@@ -9,7 +9,7 @@ public class NotRegisterTypeException : AuserIocException
     /// 未注册类型异常
     /// </summary>
     /// <param name="type"></param>
-    public NotRegisterTypeException(Type type) : base($"type [{type.FullName}] is not registered")
+    internal NotRegisterTypeException(Type type) : base($"type [{type.FullName}] is not registered")
     {
 
     }

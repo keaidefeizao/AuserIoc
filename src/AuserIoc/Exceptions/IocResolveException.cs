@@ -9,7 +9,7 @@ public class IocResolveException : AuserIocException
     /// 带自定义消息的ioc解析异常实例
     /// </summary>
     /// <param name="message"></param>
-    public IocResolveException(string message) : base($"Resolving error：{message}")
+    internal IocResolveException(string message) : base($"Resolving error：{message}")
     {
     }
 }

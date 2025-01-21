@@ -10,7 +10,7 @@ public class IocObjectConfigurationException : AuserIocException
     /// </summary>
     /// <param name="message"></param>
     //public IocObjectConfigurationException(string message) : base($"IocObject配置错误：{message}")
-    public IocObjectConfigurationException(string message) : base($"IocObject is incorrectly configured: {message}")
+    internal IocObjectConfigurationException(string message) : base($"IocObject is incorrectly configured: {message}")
     {
     }
 }

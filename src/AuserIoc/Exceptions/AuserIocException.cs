@@ -9,14 +9,14 @@ public abstract class AuserIocException : Exception
     /// 带自定义消息的实例化
     /// </summary>
     /// <param name="message"></param>
-    public AuserIocException(string message) : base(message)
+    protected AuserIocException(string message) : base(message)
     {
     }
 
     /// <summary>
     /// 实例化
     /// </summary>
-    public AuserIocException() : base()
+    protected AuserIocException() : base()
     { 
     }
 }

@@ -10,7 +10,7 @@ public class AutoRegisterException : AuserIocException
     /// </summary>
     /// <param name="type"></param>
     /// <param name="message"></param>
-    public AutoRegisterException(Type type, string message) : base($"Automatic registration '{type.FullName}' exception: {message}")
+    internal AutoRegisterException(Type type, string message) : base($"Automatic registration '{type.FullName}' exception: {message}")
     {
     }
 }

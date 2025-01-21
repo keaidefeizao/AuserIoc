@@ -9,7 +9,7 @@ public class RegisteredTypeException : AuserIocException
     /// 已注册类型异常
     /// </summary>
     /// <param name="type"></param>
-    public RegisteredTypeException(Type type) : base($"Type [{type.FullName}] has been registered")
+    internal RegisteredTypeException(Type type) : base($"Type [{type.FullName}] has been registered")
     {
     }
 }

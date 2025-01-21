@@ -8,7 +8,7 @@ public class UnableToDetermineInterfaceException : AuserIocException
     /// <summary>
     /// 
     /// </summary>
-    public UnableToDetermineInterfaceException(Type type) : base($"'{type.FullName}' is unable to determine the interface")
+    internal UnableToDetermineInterfaceException(Type type) : base($"'{type.FullName}' is unable to determine the interface")
     {
     }
 }
