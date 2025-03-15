@@ -60,6 +60,7 @@ public class Repository<T> : IRepository<T> where T : class
 public class Repository<TDatabaseContext, T> : IRepository<TDatabaseContext, T> where T : class
 {
     private readonly DbContextBase _dbContext;
+
     public Repository()
     {
         // 根据泛型 TDatabaseContext 赋值 _dbContext
@@ -102,7 +103,7 @@ public class UserEntity : DbEntityBase<int>
     public string Description { get; set; } = string.Empty;
 }
 
-public class DocEntity: DbEntityBase<Guid>
+public class DocEntity : DbEntityBase<Guid>
 {
     public string Title { get; set; } = string.Empty;
 
@@ -116,13 +117,16 @@ public class DbEntityBase<TKey>
     public TKey Id { get; set; } = default!;
 }
 
-public class SqliteContextTag { }
+public class SqliteContextTag
+{ }
 
-public class DefaultContextTag { }
+public class DefaultContextTag
+{ }
 
 public class DbContextBase
 {
 }
+
 public class DbContextBase<TDbContext, TTag> : DbContextBase
 {
 }

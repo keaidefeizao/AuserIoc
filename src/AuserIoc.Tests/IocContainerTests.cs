@@ -40,18 +40,22 @@ public class IocContainerTests
     {
         public BService BService { get; } = bService;
     }
+
     internal class BService(AService aService)
     {
         public AService AService { get; } = aService;
     }
+
     internal class CService(DService dService)
     {
         public DService DService { get; } = dService;
     }
+
     internal class DService(EService eService)
     {
         public EService EService { get; } = eService;
     }
+
     internal class EService(CService cService)
     {
         public CService CService { get; } = cService;

@@ -6,28 +6,29 @@ namespace AuserIoc.Tests;
 [TestClass]
 public class AutoRegisterTests
 {
-    public interface A { }
+    public interface A
+    { }
 
-    public interface B { }
+    public interface B
+    { }
 
     [Singleton]
-    class AutoRegisterInterfaceClass : A
+    private class AutoRegisterInterfaceClass : A
     {
-
     }
 
-    class TestClass
+    private class TestClass
     {
-        string GetName()
+        private string GetName()
         {
             return "name";
         }
     }
 
     [Singleton]
-    class ImpTestClass : TestClass
+    private class ImpTestClass : TestClass
     {
-        string Name => "name";
+        private string Name => "name";
     }
 
     [TestMethod]

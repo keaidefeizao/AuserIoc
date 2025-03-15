@@ -9,8 +9,8 @@ namespace AuserIoc;
 /// </summary>
 public class IocContainerBuilder
 {
-    private readonly IList<Action<IocContainerBuilder>> _configurationMethods;
-    private readonly IList<Action<IocContainerBuilder, IDictionary<Type, RegisterObject>>> _configurationFullMethods;
+    private readonly List<Action<IocContainerBuilder>> _configurationMethods;
+    private readonly List<Action<IocContainerBuilder, IDictionary<Type, RegisterObject>>> _configurationFullMethods;
     private readonly ConcurrentDictionary<Type, RegisterObject> _registerObjectMap;
 
     /// <summary>
@@ -89,6 +89,11 @@ public class IocContainerBuilder
     /// <exception cref="Exception"></exception>
     public RegisterObject CreateRegisterType(Type type)
     {
+        if (type == null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+
         if (_registerObjectMap.ContainsKey(type))
         {
             throw new RegisteredTypeException(type);
@@ -110,6 +115,11 @@ public class IocContainerBuilder
     /// <exception cref="Exception"></exception>
     public RegisterObject CreateRegisterInstance<TInterface>(TInterface instance)
     {
+        if (instance == null)
+        {
+            throw new ArgumentNullException(nameof(instance));
+        }
+
         var type = typeof(TInterface);
 
         if (_registerObjectMap.ContainsKey(type))
