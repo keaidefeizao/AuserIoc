@@ -1,6 +1,7 @@
 ﻿using AuserIoc.Common;
 using AuserIoc.Data;
 using AuserIoc.Exceptions;
+using System.Collections.ObjectModel;
 using System.Reflection;
 
 namespace AuserIoc;
@@ -10,13 +11,17 @@ namespace AuserIoc;
 /// </summary>
 public sealed class IocContainer : IIocContainer
 {
-    private readonly object _lock = new object();
+#if NET9_0
+    private readonly Lock _lock = new();
+#else
+    private readonly object _lock = new();
+#endif
 
     [ThreadStatic]
     private static HashSet<Type>? _resolvingTypes; // 用于追踪当前解析的类型
 
     private readonly RegisterObjectManage _registerObjectManage;
-    private readonly IReadOnlyDictionary<string, RegisterObject> _registerObjectNameMap;
+    private readonly Dictionary<string, RegisterObject> _registerObjectNameMap;
     private readonly Dictionary<RegisterObject, WeakReference<object>> _scopeInstanceManage;
 
     internal IocContainer(IReadOnlyDictionary<Type, RegisterObject> registerObjectMap)
@@ -87,7 +92,7 @@ public sealed class IocContainer : IIocContainer
     public object Resolve(Type type)
     {
         // 初始化线程本地的解析上下文
-        _resolvingTypes ??= new HashSet<Type>();
+        _resolvingTypes ??= [];
 
         // 检测循环依赖
         if (_resolvingTypes.Contains(type))
@@ -120,20 +125,13 @@ public sealed class IocContainer : IIocContainer
             return registerObject.Instance;
         }
 
-        switch (registerObject.InstanceResolveType)
+        return registerObject.InstanceResolveType switch
         {
-            case InstanceResolveType.Singleton:
-                return ResolveInstanceBySingleton(type, registerObject);
-
-            case InstanceResolveType.PerDependency:
-                return ResolveInstanceByPerDependency(type, registerObject);
-
-            case InstanceResolveType.ContainerScope:
-                return ResolveInstanceByContainerScope(type, registerObject);
-
-            default:
-                throw new NotImplementedException();
-        }
+            InstanceResolveType.Singleton => ResolveInstanceBySingleton(type, registerObject),
+            InstanceResolveType.PerDependency => ResolveInstanceByPerDependency(type, registerObject),
+            InstanceResolveType.ContainerScope => ResolveInstanceByContainerScope(type, registerObject),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     private object TakeInstance(IocInstanceManage iocInstanceManage, object lockObject, Type type, RegisterObject registerObject)
@@ -145,21 +143,16 @@ public sealed class IocContainer : IIocContainer
 
         lock (lockObject)
         {
-            if (!iocInstanceManage.ContainsKey(registerObject))
+            if (!iocInstanceManage.TryGetValue(registerObject, out object? result))
             {
-                var newInstance = registerObject.Instance;
+                result = registerObject.Instance;
 
-                if (newInstance is null)
-                {
-                    newInstance = GetInstance(type, registerObject);
-                }
+                result ??= GetInstance(type, registerObject);
 
-                iocInstanceManage.Add(registerObject, newInstance!);
-
-                return newInstance!;
+                iocInstanceManage.Add(registerObject, result!);
             }
 
-            return iocInstanceManage[registerObject];
+            return result;
         }
     }
 
@@ -177,25 +170,24 @@ public sealed class IocContainer : IIocContainer
 
         lock (_lock)  // 只在需要创建实例时加锁
         {
-            if (!_scopeInstanceManage.ContainsKey(iocObject))
+            if (!_scopeInstanceManage.TryGetValue(iocObject, out weakReference))
             {
                 var newInstance = GetInstance(type, iocObject);
                 _scopeInstanceManage.Add(iocObject, new WeakReference<object>(newInstance));
                 return newInstance;
             }
 
-            if (_scopeInstanceManage[iocObject].TryGetTarget(out instance))
+            if (weakReference.TryGetTarget(out instance))
             {
                 return instance;
             }
             else
             {
                 var newInstance = GetInstance(type, iocObject);
-                _scopeInstanceManage[iocObject].SetTarget(newInstance);
+                weakReference.SetTarget(newInstance);
                 return newInstance;
             }
         }
-        //return TakeInstance(_scopeInstanceManage, _lock, type, iocObject);
     }
 
     private object ResolveInstanceByPerDependency(Type type, RegisterObject registerObject)
