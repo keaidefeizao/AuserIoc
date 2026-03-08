@@ -10,9 +10,9 @@ namespace AuserIoc;
 /// </summary>
 public sealed class RegisterObject
 {
-    private static BindingFlags findConstructorFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default;
+    private readonly static BindingFlags findConstructorFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default;
 
-    private static Type resolveAttributeType = typeof(IocResolveAttribute);
+    private readonly static Type resolveAttributeType = typeof(IocResolveAttribute);
 
     private readonly Type _type;
 
@@ -65,8 +65,7 @@ public sealed class RegisterObject
     {
         get
         {
-            if (_parameterInfos is null)
-                _parameterInfos = FactoryMethod is null ? [] : FactoryMethod.Method.GetParameters();
+            _parameterInfos ??= FactoryMethod is null ? [] : FactoryMethod.Method.GetParameters();
 
             return _parameterInfos!;
         }
@@ -206,7 +205,7 @@ public sealed class RegisterObject
     /// <exception cref="IocResolveException"></exception>
     internal TypeResolveInfo GetTypeResolveInfo(Type type)
     {
-        if (IocContext.ACTUAL_TYPE_TYPERESOLVEINFO_MAP.TryGetValue(type, out TypeResolveInfo? typeResolveInfo))
+        if (IocContext.ACTUAL_TYPE_RESOLVE_INFO_MAP.TryGetValue(type, out TypeResolveInfo? typeResolveInfo))
         {
             return typeResolveInfo;
         }
@@ -230,9 +229,7 @@ public sealed class RegisterObject
 
         if (constructorInfos.Length > 1)
         {
-            constructorInfos = constructorInfos
-                .Where(c => c.GetCustomAttribute(resolveAttributeType) is not null)
-                .ToArray();
+            constructorInfos = [.. constructorInfos.Where(c => c.GetCustomAttribute(resolveAttributeType) is not null)];
 
             if (constructorInfos.Length > 1)
             {
@@ -244,7 +241,7 @@ public sealed class RegisterObject
 
         typeResolveInfo = new TypeResolveInfo(type, constructorInfo, constructorInfo.GetParameters());
 
-        IocContext.ACTUAL_TYPE_TYPERESOLVEINFO_MAP.TryAdd(type, typeResolveInfo);
+        IocContext.ACTUAL_TYPE_RESOLVE_INFO_MAP.TryAdd(type, typeResolveInfo);
 
         return typeResolveInfo;
     }

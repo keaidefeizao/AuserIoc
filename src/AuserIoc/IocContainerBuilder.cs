@@ -132,10 +132,15 @@ public class IocContainerBuilder
     /// <exception cref="ArgumentNullException"></exception>
     public IocContainerBuilder Configuration(Action<IocContainerBuilder> configurationMethod)
     {
+#if NETFRAMEWORK
         if (configurationMethod is null)
         {
             throw new ArgumentNullException(nameof(configurationMethod));
         }
+#else
+        ArgumentNullException.ThrowIfNull(configurationMethod, nameof(configurationMethod));
+#endif
+
 
         _configurationMethods.Add(configurationMethod);
 
@@ -149,10 +154,14 @@ public class IocContainerBuilder
     /// <returns></returns>
     public IocContainerBuilder Configuration(Action<IocContainerBuilder, IDictionary<Type, RegisterObject>> configurationMethod)
     {
+#if NETFRAMEWORK
         if (configurationMethod is null)
         {
             throw new ArgumentNullException(nameof(configurationMethod));
         }
+#else
+        ArgumentNullException.ThrowIfNull(configurationMethod, nameof(configurationMethod));
+#endif
 
         _configurationFullMethods.Add(configurationMethod);
 
