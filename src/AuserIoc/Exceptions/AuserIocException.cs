@@ -17,6 +17,6 @@ public abstract class AuserIocException : Exception
     /// 实例化
     /// </summary>
     protected AuserIocException() : base()
-    { 
+    {
     }
 }

@@ -1,7 +1,6 @@
 ﻿using AuserIoc.Common;
 using AuserIoc.Data;
 using AuserIoc.Exceptions;
-using System.Collections.ObjectModel;
 using System.Reflection;
 
 namespace AuserIoc;

@@ -89,10 +89,12 @@ public class IocContainerBuilder
     /// <exception cref="Exception"></exception>
     public RegisterObject CreateRegisterType(Type type)
     {
+#if NETFRAMEWORK
         if (type == null)
-        {
             throw new ArgumentNullException(nameof(type));
-        }
+#else
+        ArgumentNullException.ThrowIfNull(type, nameof(type));
+#endif
 
         if (_registerObjectMap.ContainsKey(type))
         {
@@ -144,13 +146,10 @@ public class IocContainerBuilder
     {
 #if NETFRAMEWORK
         if (configurationMethod is null)
-        {
             throw new ArgumentNullException(nameof(configurationMethod));
-        }
 #else
         ArgumentNullException.ThrowIfNull(configurationMethod, nameof(configurationMethod));
 #endif
-
 
         _configurationMethods.Add(configurationMethod);
 
@@ -166,9 +165,7 @@ public class IocContainerBuilder
     {
 #if NETFRAMEWORK
         if (configurationMethod is null)
-        {
             throw new ArgumentNullException(nameof(configurationMethod));
-        }
 #else
         ArgumentNullException.ThrowIfNull(configurationMethod, nameof(configurationMethod));
 #endif

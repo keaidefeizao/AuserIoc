@@ -11,6 +11,5 @@ public class NotRegisterTypeException : AuserIocException
     /// <param name="type"></param>
     internal NotRegisterTypeException(Type type) : base($"type [{type.FullName}] is not registered")
     {
-
     }
 }

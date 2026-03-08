@@ -513,7 +513,7 @@ public static class IocContainerBuilderExtension
     {
         foreach (Assembly assembly in assemblies)
         {
-            foreach (var type in assembly.GetTypes().Where(t=>t.IsClass && !t.IsAbstract))
+            foreach (var type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract))
             {
                 var autoRegisterAttributes = type.GetCustomAttributes<AutoRegisterAttribute>().ToArray();
 
@@ -551,7 +551,7 @@ public static class IocContainerBuilderExtension
                 {
                     ro.InstanceBySingleton();
                 }
-                else if(autoRegisterAttribute is PerDependencyAttribute)
+                else if (autoRegisterAttribute is PerDependencyAttribute)
                 {
                     ro.InstanceByPerDependency();
                 }

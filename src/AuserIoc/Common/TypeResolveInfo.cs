@@ -10,6 +10,7 @@ internal class TypeResolveInfo
         ConstructorInfo = constructorInfo;
         ParameterInfos = parameterInfos;
     }
+
     internal Type Type { get; }
     internal ConstructorInfo ConstructorInfo { get; }
     internal ParameterInfo[] ParameterInfos { get; }

@@ -6,7 +6,7 @@
 public class AutoRegisterException : AuserIocException
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <param name="type"></param>
     /// <param name="message"></param>

@@ -10,9 +10,9 @@ namespace AuserIoc;
 /// </summary>
 public sealed class RegisterObject
 {
-    private readonly static BindingFlags findConstructorFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default;
+    private static readonly BindingFlags findConstructorFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Default;
 
-    private readonly static Type resolveAttributeType = typeof(IocResolveAttribute);
+    private static readonly Type resolveAttributeType = typeof(IocResolveAttribute);
 
     private readonly Type _type;
 
