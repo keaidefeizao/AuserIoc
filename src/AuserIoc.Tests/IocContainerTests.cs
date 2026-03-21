@@ -9,6 +9,14 @@ public class IocContainerTests
 {
     #region class
 
+    internal interface IService
+    {
+    }
+
+    internal class SimpleTestService : IService
+    {
+    }
+
     internal class TestService(IRepository<UserEntity> userRepo,
                                IRepository<DocEntity> docRepo,
                                IRepository<object> objectRepo,
@@ -214,5 +222,87 @@ public class IocContainerTests
 
         (appDbContext1 == appDbContext3).Should().BeTrue();
         (sqliteAppDbContext1 == sqliteAppDbContext3).Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Resolve(Type) 方法测试
+    /// </summary>
+    [TestMethod]
+    public void Resolve_NonGenericType_ShouldSuccess()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder.RegisterType<IService, SimpleTestService>();
+
+        var container = builder.Build();
+
+        var service = container.Resolve(typeof(IService));
+
+        service.Should().NotBeNull();
+        service.Should().BeOfType<SimpleTestService>();
+    }
+
+    /// <summary>
+    /// Resolve(Type) with named registration test
+    /// </summary>
+    [TestMethod]
+    public void Resolve_NonGenericTypeWithName_ShouldSuccess()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder.RegisterType<IService, SimpleTestService>("MyService");
+
+        var container = builder.Build();
+
+        var service = container.Resolve<IService>("MyService");
+
+        service.Should().NotBeNull();
+        service.Should().BeOfType<SimpleTestService>();
+    }
+
+    /// <summary>
+    /// Resolve(Type) with Scoped lifecycle test
+    /// </summary>
+    [TestMethod]
+    public void Resolve_NonGenericType_ScopedLifecycle_ShouldReturnSameInstanceInScope()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder.RegisterScoped<IService, SimpleTestService>();
+
+        var container = builder.Build();
+
+        var service1 = container.Resolve(typeof(IService));
+        var service2 = container.Resolve(typeof(IService));
+
+        service1.Should().BeSameAs(service2);
+
+        var scopeContainer = container.BeginContainerScope();
+        var service3 = scopeContainer.Resolve(typeof(IService));
+
+        service1.Should().NotBeSameAs(service3);
+    }
+
+    /// <summary>
+    /// Resolve(Type) with Singleton lifecycle test
+    /// </summary>
+    [TestMethod]
+    public void Resolve_NonGenericType_SingletonLifecycle_ShouldReturnSameInstance()
+    {
+        var builder = new IocContainerBuilder();
+
+        builder.RegisterSingleton<IService, SimpleTestService>();
+
+        var container = builder.Build();
+
+        var service1 = container.Resolve(typeof(IService));
+        var service2 = container.Resolve(typeof(IService));
+
+        service1.Should().BeSameAs(service2);
+
+        var scopeContainer = container.BeginContainerScope();
+        var service3 = scopeContainer.Resolve(typeof(IService));
+
+        service1.Should().BeSameAs(service3);
     }
 }

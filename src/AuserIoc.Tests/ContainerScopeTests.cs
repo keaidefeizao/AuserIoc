@@ -68,7 +68,7 @@ public class ContainerScopeTests
     }
 
     [TestMethod]
-    public void Test()
+    public void Scoped_WithSingletonDependencies_ShouldReuseScopedInstance()
     {
         var builder = new IocContainerBuilder();
 

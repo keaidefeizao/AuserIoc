@@ -205,44 +205,43 @@ public sealed class RegisterObject
     /// <exception cref="IocResolveException"></exception>
     internal TypeResolveInfo GetTypeResolveInfo(Type type)
     {
-        if (IocContext.ACTUAL_TYPE_RESOLVE_INFO_MAP.TryGetValue(type, out TypeResolveInfo? typeResolveInfo))
+        // 使用嵌套缓存结构：第一层 keyed by resolve type, 第二层 keyed by impl type
+        var implTypeCache = IocContext.ACTUAL_TYPE_RESOLVE_INFO_MAP.GetOrCreateValue(type);
+        return implTypeCache.GetOrAdd(_type, key =>
         {
-            return typeResolveInfo;
-        }
+            ConstructorInfo[] constructorInfos;
+            var t = type;
 
-        ConstructorInfo[] constructorInfos;
+            // 只有当实现类型是开放泛型类型定义时，才需要构造具体类型
+            if (_type.IsGenericTypeDefinition && t.IsGenericType)
+            {
+                var specificType = _type.MakeGenericType(t.GetGenericArguments());
+                constructorInfos = specificType.GetConstructors(findConstructorFlags);
+            }
+            else
+            {
+                constructorInfos = _type.GetConstructors(findConstructorFlags);
+            }
 
-        if (type.IsGenericType)
-        {
-            var specificType = Type.MakeGenericType(type.GetGenericArguments());
-            constructorInfos = specificType.GetConstructors(findConstructorFlags);
-        }
-        else
-        {
-            constructorInfos = Type.GetConstructors(findConstructorFlags);
-        }
-
-        if (constructorInfos.Length == 0)
-        {
-            throw new IocResolveException("There must be only one constructor");
-        }
-
-        if (constructorInfos.Length > 1)
-        {
-            constructorInfos = [.. constructorInfos.Where(c => c.GetCustomAttribute(resolveAttributeType) is not null)];
-
-            if (constructorInfos.Length > 1)
+            if (constructorInfos.Length == 0)
             {
                 throw new IocResolveException("There must be only one constructor");
             }
-        }
 
-        var constructorInfo = constructorInfos[0];
+            if (constructorInfos.Length > 1)
+            {
+                // 使用 CustomAttributeData 替代 GetCustomAttribute，避免创建 Attribute 实例，减少 GC 分配
+                constructorInfos = [.. constructorInfos.Where(c => CustomAttributeData.GetCustomAttributes(c).Any(ca => ca.AttributeType == resolveAttributeType))];
 
-        typeResolveInfo = new TypeResolveInfo(type, constructorInfo, constructorInfo.GetParameters());
+                if (constructorInfos.Length > 1)
+                {
+                    throw new IocResolveException("There must be only one constructor");
+                }
+            }
 
-        IocContext.ACTUAL_TYPE_RESOLVE_INFO_MAP.TryAdd(type, typeResolveInfo);
+            var constructorInfo = constructorInfos[0];
 
-        return typeResolveInfo;
+            return new TypeResolveInfo(t, constructorInfo, constructorInfo.GetParameters());
+        });
     }
 }

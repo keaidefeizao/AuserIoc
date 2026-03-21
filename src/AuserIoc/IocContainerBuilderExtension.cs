@@ -513,18 +513,19 @@ public static class IocContainerBuilderExtension
     {
         foreach (Assembly assembly in assemblies)
         {
-            foreach (var type in assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract))
+            // 使用 DefinedTypes 替代 GetTypes()，支持流式处理，减少内存压力
+            // 先检查特性再加载完整类型信息，避免不必要的类型加载
+            foreach (var typeInfo in assembly.DefinedTypes)
             {
-                var autoRegisterAttributes = type.GetCustomAttributes<AutoRegisterAttribute>().ToArray();
-
-                if (autoRegisterAttributes is null || autoRegisterAttributes.Length < 1)
+                if (typeInfo.IsAbstract || !typeInfo.IsClass)
                     continue;
 
-                if (autoRegisterAttributes.Length > 1)
-                {
-                    throw new AutoRegisterException(type, $"Only one '{nameof(AutoRegisterAttribute)}' can be annotated");
-                }
+                var autoRegisterAttribute = typeInfo.GetCustomAttribute<AutoRegisterAttribute>();
 
+                if (autoRegisterAttribute is null)
+                    continue;
+
+                var type = typeInfo.AsType();
                 var ro = iocContainerBuilder.CreateRegisterType(type);
 
                 var interfaceTypes = type.GetInterfaces();
@@ -544,8 +545,6 @@ public static class IocContainerBuilderExtension
                         ro.As(type.BaseType);
                     }
                 }
-
-                var autoRegisterAttribute = autoRegisterAttributes[0];
 
                 if (autoRegisterAttribute is SingletonAttribute)
                 {

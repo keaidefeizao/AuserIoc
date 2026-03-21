@@ -1,6 +1,7 @@
 ﻿using AuserIoc.Common;
 using AuserIoc.Data;
 using AuserIoc.Exceptions;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace AuserIoc;
@@ -19,17 +20,31 @@ public sealed class IocContainer : IIocContainer
     [ThreadStatic]
     private static HashSet<Type>? _resolvingTypes; // 用于追踪当前解析的类型
 
-    private readonly RegisterObjectManage _registerObjectManage;
+    private readonly RegisterObjectManager _registerObjectManager;
     private readonly Dictionary<string, RegisterObject> _registerObjectNameMap;
-    private readonly Dictionary<RegisterObject, WeakReference<object>> _scopeInstanceManage;
+    private readonly ConcurrentDictionary<RegisterObject, object> _scopeInstanceManager;
 
     internal IocContainer(IReadOnlyDictionary<Type, RegisterObject> registerObjectMap)
     {
-        _registerObjectManage = new RegisterObjectManage(registerObjectMap);
+        _registerObjectManager = new RegisterObjectManager(registerObjectMap);
 
-        _registerObjectNameMap = registerObjectMap.Values.Where(t => !string.IsNullOrWhiteSpace(t.Name)).ToDictionary(obj => obj.Name!, obj => obj)!;
+        // 优化：使用 for 循环替代 LINQ，减少分配
+        var namedRegisters = new List<KeyValuePair<Type, RegisterObject>>(registerObjectMap.Count);
+        foreach (var kvp in registerObjectMap)
+        {
+            if (!string.IsNullOrWhiteSpace(kvp.Value.Name))
+            {
+                namedRegisters.Add(kvp);
+            }
+        }
 
-        _scopeInstanceManage = [];
+        _registerObjectNameMap = new Dictionary<string, RegisterObject>(namedRegisters.Count);
+        foreach (var kvp in namedRegisters)
+        {
+            _registerObjectNameMap[kvp.Value.Name!] = kvp.Value;
+        }
+
+        _scopeInstanceManager = [];
     }
 
     internal void Initialize()
@@ -37,7 +52,7 @@ public sealed class IocContainer : IIocContainer
         // 默认注入当前容器
         var iocContainerType = typeof(IocContainer);
 
-        if (_registerObjectManage.Map.TryGetValue(iocContainerType, out var iocObject))
+        if (_registerObjectManager.Map.TryGetValue(iocContainerType, out var iocObject))
         {
             iocObject
                 .AddFactoryMethod(() => this)
@@ -50,19 +65,13 @@ public sealed class IocContainer : IIocContainer
     /// <inheritdoc/>
     public void Dispose()
     {
-        //GC.SuppressFinalize(this);
-        //throw new NotImplementedException();
-        lock (_lock)
-        {
-            _scopeInstanceManage.Clear();
-            GC.Collect();
-        }
+        _scopeInstanceManager.Clear();
     }
 
     /// <inheritdoc/>
     public IIocContainer BeginContainerScope()
     {
-        var container = new IocContainer(_registerObjectManage.Map);
+        var container = new IocContainer(_registerObjectManager.Map);
 
         container.Initialize();
 
@@ -81,7 +90,7 @@ public sealed class IocContainer : IIocContainer
     {
         if (_registerObjectNameMap.TryGetValue(name, out RegisterObject? iocObject) && iocObject is not null)
         {
-            return (T)Resolve(iocObject.Type, iocObject);
+            return (T)Resolve(typeof(T), iocObject);
         }
 
         throw new IocResolveException($"Registration object with name [{name}] not found");
@@ -103,7 +112,7 @@ public sealed class IocContainer : IIocContainer
         try
         {
             _resolvingTypes.Add(type); // 开始解析类型
-            RegisterObject registerObject = _registerObjectManage[type];
+            RegisterObject registerObject = _registerObjectManager[type];
             return Resolve(type, registerObject);
         }
         finally
@@ -133,59 +142,33 @@ public sealed class IocContainer : IIocContainer
         };
     }
 
-    private object TakeInstance(IocInstanceManage iocInstanceManage, object lockObject, Type type, RegisterObject registerObject)
-    {
-        if (iocInstanceManage.TryGetValue(registerObject, out var instance))
-        {
-            return instance;
-        }
-
-        lock (lockObject)
-        {
-            if (!iocInstanceManage.TryGetValue(registerObject, out object? result))
-            {
-                result = registerObject.Instance;
-
-                result ??= GetInstance(type, registerObject);
-
-                iocInstanceManage.Add(registerObject, result!);
-            }
-
-            return result;
-        }
-    }
-
     private object ResolveInstanceBySingleton(Type type, RegisterObject registerObject)
     {
-        return TakeInstance(IocContext.SINGLE_INSTANCE_MANAGE, IocContext.STATIC_LOCK, type, registerObject);
+        return IocContext.SINGLE_INSTANCE_MANAGE.GetOrAdd(registerObject, key =>
+        {
+            return registerObject.Instance ?? GetInstance(type, key);
+        });
     }
 
-    private object ResolveInstanceByContainerScope(Type type, RegisterObject iocObject)
+    private object ResolveInstanceByContainerScope(Type type, RegisterObject registerObject)
     {
-        if (_scopeInstanceManage.TryGetValue(iocObject, out var weakReference) && weakReference.TryGetTarget(out var instance))
+        // 先尝试无锁获取
+        if (_scopeInstanceManager.TryGetValue(registerObject, out var instance))
         {
             return instance!;
         }
 
-        lock (_lock)  // 只在需要创建实例时加锁
+        // 需要创建新实例时加锁
+        lock (_lock)
         {
-            if (!_scopeInstanceManage.TryGetValue(iocObject, out weakReference))
+            if (_scopeInstanceManager.TryGetValue(registerObject, out instance))
             {
-                var newInstance = GetInstance(type, iocObject);
-                _scopeInstanceManage.Add(iocObject, new WeakReference<object>(newInstance));
-                return newInstance;
+                return instance!;
             }
 
-            if (weakReference.TryGetTarget(out instance))
-            {
-                return instance;
-            }
-            else
-            {
-                var newInstance = GetInstance(type, iocObject);
-                weakReference.SetTarget(newInstance);
-                return newInstance;
-            }
+            var newInstance = GetInstance(type, registerObject);
+            _scopeInstanceManager.AddOrUpdate(registerObject, newInstance, (_, _) => newInstance);
+            return newInstance;
         }
     }
 
@@ -198,12 +181,36 @@ public sealed class IocContainer : IIocContainer
     {
         if (registerObject.FactoryMethod is not null)
         {
-            return registerObject.FactoryMethod.DynamicInvoke(ResolveParameters(registerObject.FactoryMethodParameterInfos))!;
+            var parameters = registerObject.FactoryMethodParameterInfos;
+            if (parameters.Length == 0)
+            {
+                // 无参数工厂方法：尝试直接调用委托，避免 DynamicInvoke 开销
+                return registerObject.FactoryMethod switch
+                {
+                    Func<object> simpleFactory => simpleFactory(),
+                    Func<IIocContainer, object> factoryWithContainer => factoryWithContainer(this),
+                    _ => registerObject.FactoryMethod.DynamicInvoke(null)!
+                };
+            }
+            else
+            {
+                // 有参数工厂方法：解析参数后调用
+                var resolvedParams = ResolveParameters(parameters);
+
+                // 尝试使用委托直接调用，避免 DynamicInvoke 开销
+                return registerObject.FactoryMethod switch
+                {
+                    Func<object[], object> arrayFactory => arrayFactory(resolvedParams),
+                    _ => registerObject.FactoryMethod.DynamicInvoke(resolvedParams)!
+                };
+            }
         }
         else
         {
             var typeResolveInfo = registerObject.GetTypeResolveInfo(type);
-            return typeResolveInfo.ConstructorInfo.Invoke(ResolveParameters(typeResolveInfo.ParameterInfos));
+            var parameters = typeResolveInfo.ParameterInfos;
+            // 使用预编译的构造函数调用器
+            return typeResolveInfo.Invoke(parameters.Length == 0 ? null : ResolveParameters(parameters));
         }
     }
 

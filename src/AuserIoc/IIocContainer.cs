@@ -19,7 +19,7 @@ public interface IIocContainer : IDisposable
     T Resolve<T>();
 
     /// <summary>
-    /// 通过名称解析狐裘指定的对象
+    /// 通过名称解析获取指定的对象
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="name"></param>
